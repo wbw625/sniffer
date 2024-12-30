@@ -4,7 +4,6 @@ import datetime
 import urllib.parse
 import socket
 import re
-import urllib.parse
 
 from scapy.all import sniff, conf, wrpcap, rdpcap
 
@@ -15,6 +14,9 @@ from PyQt6.QtCore import Qt, pyqtSignal, QThread
 from PyQt6.QtGui import QColor
 
 from ui import Ui_MainWindow  # 确保 ui.py 文件存在并包含 Ui_MainWindow 类
+
+from scapy.layers.inet import IP
+from scapy.packet import Raw
 
 
 class CaptureThread(QThread):
@@ -58,6 +60,8 @@ class SnifferApp(QMainWindow, Ui_MainWindow):
 
         self.resolved_src_ips = []
         self.resolved_dst_ips = []
+
+        self.fragmented_packets = {}  # 用于存储分片的字典
 
         self.ip_reassembly_enabled = self.yesReassembleRadioButton.isChecked()
 
@@ -281,6 +285,51 @@ class SnifferApp(QMainWindow, Ui_MainWindow):
         self.yesReassembleRadioButton.setEnabled(True)
         self.noReassembleRadioButton.setEnabled(True)
 
+    # def handle_packet(self, packet):
+    #     """
+    #     处理捕获到的数据包，存储并根据过滤条件显示。
+    #     """
+    #     current_index = self.networkInterfacesComboBox.currentIndex()
+    #     if current_index < 0 or current_index >= len(self.interfaces_list):
+    #         return
+
+    #     current_iface = self.interfaces_list[current_index]
+    #     self.packets_dict[current_iface].append(packet)
+    #     self.display_filtered_packet(packet)
+
+    def reassemble_ip_packet(self, packet):
+        """
+        处理 IP 分片的重组逻辑。
+        """
+        ip_layer = packet['IP']
+        fragment_id = (ip_layer.src, ip_layer.dst, ip_layer.id)
+        
+        if fragment_id not in self.fragmented_packets:
+            self.fragmented_packets[fragment_id] = []
+
+        # 存储当前分片
+        self.fragmented_packets[fragment_id].append(packet)
+        
+        # 检查是否完成重组
+        if not ip_layer.flags.MF and ip_layer.frag == 0:
+            # 排序分片
+            sorted_fragments = sorted(self.fragmented_packets[fragment_id], key=lambda pkt: pkt['IP'].frag)
+            
+            # 拼接数据
+            assembled_payload = b''.join(frag['IP'].payload.original for frag in sorted_fragments)
+            
+            # 创建新的 IP 数据包
+            first_fragment = sorted_fragments[0]
+            first_fragment['IP'].remove_payload()
+            first_fragment['IP'].add_payload(assembled_payload)
+            
+            # 删除分片记录
+            del self.fragmented_packets[fragment_id]
+            
+            # 将重组后的数据包传递给主逻辑
+            self.handle_packet(first_fragment)
+
+
     def handle_packet(self, packet):
         """
         处理捕获到的数据包，存储并根据过滤条件显示。
@@ -290,8 +339,17 @@ class SnifferApp(QMainWindow, Ui_MainWindow):
             return
 
         current_iface = self.interfaces_list[current_index]
+        
+        # 处理 IP 重组逻辑
+        if self.ip_reassembly_enabled and packet.haslayer('IP') and packet['IP'].flags.MF:
+            self.reassemble_ip_packet(packet)
+            return
+        
+        # 保存数据包并显示
         self.packets_dict[current_iface].append(packet)
         self.display_filtered_packet(packet)
+
+
 
     def determine_protocol(self, packet):
         """
