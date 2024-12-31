@@ -5,22 +5,21 @@ import urllib.parse
 import socket
 import re
 
-from scapy.all import sniff, conf, wrpcap, rdpcap
-
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QTableWidgetItem, QMessageBox, QFileDialog
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QThread
 from PyQt6.QtGui import QColor
 
-from ui import Ui_MainWindow  # 确保 ui.py 文件存在并包含 Ui_MainWindow 类
+from ui import Ui_MainWindow
 
+from scapy.all import sniff, conf, wrpcap, rdpcap
 from scapy.layers.inet import IP
 from scapy.packet import Raw
 
 
 class CaptureThread(QThread):
-    packet_received = pyqtSignal(object)  # 信号用于发射捕获的数据包
+    packet_received = pyqtSignal(object)
 
     def __init__(self, interface):
         super().__init__()
@@ -65,7 +64,6 @@ class SnifferApp(QMainWindow, Ui_MainWindow):
 
         self.ip_reassembly_enabled = self.yesReassembleRadioButton.isChecked()
 
-        # 定义协议颜色映射
         self.protocol_color_mapping = {
             # bright
             # 'TCP': QColor(255, 228, 196),
@@ -285,18 +283,6 @@ class SnifferApp(QMainWindow, Ui_MainWindow):
         self.yesReassembleRadioButton.setEnabled(True)
         self.noReassembleRadioButton.setEnabled(True)
 
-    # def handle_packet(self, packet):
-    #     """
-    #     处理捕获到的数据包，存储并根据过滤条件显示。
-    #     """
-    #     current_index = self.networkInterfacesComboBox.currentIndex()
-    #     if current_index < 0 or current_index >= len(self.interfaces_list):
-    #         return
-
-    #     current_iface = self.interfaces_list[current_index]
-    #     self.packets_dict[current_iface].append(packet)
-    #     self.display_filtered_packet(packet)
-
     def reassemble_ip_packet(self, packet):
         """
         处理 IP 分片的重组逻辑。
@@ -502,7 +488,7 @@ class SnifferApp(QMainWindow, Ui_MainWindow):
             options = QFileDialog.Option.DontUseNativeDialog
             file_path, _ = QFileDialog.getOpenFileName(
                 self,
-                "加载数据包捕获",
+                "加载数据包",
                 "",
                 "PCAP 文件 (*.pcap);;所有文件 (*)",
                 options=options

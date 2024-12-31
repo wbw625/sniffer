@@ -74,7 +74,7 @@
       <item>
        <widget class="QLineEdit" name="protocolLineEdit">
         <property name="placeholderText">
-         <string>Enter Protocol (eg. TCP) ...</string>
+         <string>eg. TCP ...</string>
         </property>
        </widget>
       </item>
@@ -88,7 +88,7 @@
       <item>
        <widget class="QLineEdit" name="sourceLineEdit">
         <property name="placeholderText">
-         <string>Enter Source IP (eg. 1.1.1.1) ...</string>
+         <string>eg. 1.1.1.1 or https://www.baidu/com ...</string>
         </property>
        </widget>
       </item>
@@ -102,7 +102,7 @@
       <item>
        <widget class="QLineEdit" name="destinationLineEdit">
         <property name="placeholderText">
-         <string>Enter Destination IP (e.g. 2.2.2.2) ...</string>
+         <string>eg. 1.1.1.1 or https://www.baidu/com ...</string>
         </property>
        </widget>
       </item>
